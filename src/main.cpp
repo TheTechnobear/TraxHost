@@ -11,9 +11,9 @@
 int main(int argc, char **argv) {
     SSPModule sspModule;
     if (sspModule.load("trax")) {
-        printf("Loaded trax\n");
+        // printf("Loaded trax\n");
     } else {
-        printf("Failed to load trax\n");
+        //printf("Failed to load trax\n");
     }
 
     SDL_Renderer *renderer;
