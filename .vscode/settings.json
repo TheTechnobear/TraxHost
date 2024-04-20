@@ -75,6 +75,7 @@
         "algorithm": "cpp",
         "*.mm": "cpp",
         "execution": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "__memory": "cpp"
     }
 }

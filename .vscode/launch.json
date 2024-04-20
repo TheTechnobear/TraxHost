@@ -11,10 +11,11 @@
             "program": "${workspaceFolder}/build/TraxHost",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/resources/test",
+            "cwd": "${workspaceFolder}/release/macos",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb"
+            "MIMode": "lldb",
+            "preLaunchTask": "build TraxHost"
         }
     ]
 }

@@ -20,10 +20,11 @@ endif ()
 include_directories(${SDL2_INCLUDE_DIRS})
 
 
-# Add your source files here
 set(SOURCES
     src/main.cpp
-    src/SSPModule.cpp
+    src/Module.cpp
+    src/Log.cpp
+    src/Hardware.cpp
 )
 
 add_executable(TraxHost ${SOURCES})

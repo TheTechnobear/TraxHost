@@ -1,64 +1,219 @@
 
 #include <SDL2/SDL.h>
-#include <stdlib.h>
 
-#define WINDOW_WIDTH 320
-#define WINDOW_HEIGHT 320
+#include "Hardware.h"
+#include "Log.h"
+#include "Module.h"
 
-#include "SSPModule.h"
+#include <signal.h>
+bool keepRunning = true;
 
+bool handleEvent(SDL_Event &event, TraxHost::Module &module) {
+    switch (event.type) {
+        case SDL_QUIT: return false;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP: {
+            switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE: {
+                    if (event.type == SDL_KEYUP) { return false; }
+                    break;
+                }
+                case SDLK_UP: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Up, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_DOWN: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_LEFT: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_RIGHT: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_LEFTBRACKET: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Shift_L, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_RIGHTBRACKET: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Shift_R, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_1 ... SDLK_8: {
+                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Soft_1 + event.key.keysym.sym - SDLK_1,
+                                         event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_q: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(0, 1);
+                    break;
+                }
+                case SDLK_w: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(1, 1);
+                    break;
+                }
+                case SDLK_e: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(2, 1);
+                    break;
+                }
+                case SDLK_r: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(3, 1);
+                    break;
+                }
+                case SDLK_a: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(0, -1);
+                    break;
+                }
+                case SDLK_s: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(1, -1);
+                    break;
+                }
+                case SDLK_d: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(2, -1);
+                    break;
+                }
+                case SDLK_f: {
+                    if (event.type == SDL_KEYDOWN) module.encoderTurned(3, -1);
+                    break;
+                }
+                case SDLK_z: {
+                    module.encoderPressed(0, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_x: {
+                    module.encoderPressed(1, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_c: {
+                    module.encoderPressed(2, event.type == SDL_KEYDOWN);
+                    break;
+                }
+                case SDLK_v: {
+                    module.encoderPressed(3, event.type == SDL_KEYDOWN);
+                    break;
+                }
+            }  // switch(event.key.keysym.sym)
+            break;
+        }  // case SDL_KEYDOWN, SDL_KEYUP
+    }  // switch(event.type)
+    return true;
+}
+
+
+bool handleHardwareEvents(TraxHost::Hardware &hw, TraxHost::Module &module) {
+    return hw.handleEvents(module);
+}
+
+
+void intHandler(int sig) {
+    // only called in main thread
+    if (sig == SIGINT) {
+        keepRunning = 0;
+    }
+}
 
 int main(int argc, char **argv) {
-    SSPModule sspModule;
-    if (sspModule.load("trax")) {
-        // printf("Loaded trax\n");
+    TraxHost::log("TraxHost: Starting");
+
+#ifndef WIN32
+    // block sigint from other threads
+    sigset_t sigset, oldset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &sigset, &oldset);
+#endif
+
+
+#ifndef WIN32
+    // Install the signal handler for SIGINT.
+    struct sigaction s;
+    s.sa_handler = intHandler;
+    sigemptyset(&s.sa_mask);
+    s.sa_flags = 0;
+    sigaction(SIGINT, &s, NULL);
+    // Restore the old signal mask only for this thread.
+    pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif
+
+#if __APPLE__
+    static constexpr unsigned devWidth = 320, devHeight = 240;
+#else
+    static constexpr unsigned devWidth = 320, devHeight = 320;
+#endif
+
+    static constexpr unsigned winWidth = devWidth, winHeight = 240;
+    static constexpr unsigned pixelSize = 4;
+
+    unsigned char argbBuffer[winWidth * winHeight * pixelSize];
+
+    TraxHost::Hardware hw;
+
+    if (hw.init()) {
+        TraxHost::log("Hardware init success");
     } else {
-        //printf("Failed to load trax\n");
+        TraxHost::error("Hardware init failed");
+        return -1;
+    }
+
+    TraxHost::Module module;
+    if (module.load("trax")) {
+        TraxHost::log("Loaded trax");
+    } else {
+        TraxHost::error("Loading failed trax");
+        return -1;
     }
 
     SDL_Renderer *renderer;
     SDL_Window *window;
-    SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
-    SDL_CreateWindowAndRenderer(WINDOW_HEIGHT, WINDOW_WIDTH, 0, &window, &renderer);
-    SDL_ShowCursor(false);
+    SDL_Init(0);
+    SDL_CreateWindowAndRenderer(devWidth, devHeight, 0, &window, &renderer);
+    SDL_ShowCursor(SDL_DISABLE);
 
-    SDL_Rect rect = { 0, 0, WINDOW_WIDTH, 240 };
-    SDL_Surface *surface = SDL_CreateRGBSurface(0, rect.w, rect.h, 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
-    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 64, 64, 64));
+    SDL_Rect winRect = { 0, 0, winWidth, winHeight };
+    SDL_Texture *texture =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, winRect.w, winRect.h);
 
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    module.visibilityChanged(true);
 
-    SDL_Event event;
-    bool quit = false;
-    sspModule.visibilityChanged(true);
-
-    unsigned char argb[rect.w * rect.h * 4];
-
-    while (!quit) {
-        while (SDL_PollEvent(&event) == 1) {
-            if (event.type == SDL_QUIT) { quit = true; }
-        }
+    TraxHost::log("TraxHost: Running");
+    while (keepRunning) {
+#if __APPLE__
+        // SDL_PollEvent eats all IO events
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) { keepRunning = handleEvent(event, module); }
+#endif
+        handleHardwareEvents(hw, module);
 
         Uint8 r = 0, g = 0, b = 0, a = 0;
         SDL_SetRenderDrawColor(renderer, r, g, b, a);
         SDL_RenderClear(renderer);
 
-        sspModule.frameStart();
+        module.frameStart();
+        module.renderToImage(argbBuffer, winRect.w, winRect.h);
 
-
-        sspModule.renderToImage(argb, rect.w, rect.h);
-
-        SDL_UpdateTexture(texture, NULL, argb, rect.w * 4);
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
+        SDL_UpdateTexture(texture, NULL, argbBuffer, winRect.w * 4);
+        SDL_RenderCopy(renderer, texture, NULL, &winRect);
         SDL_RenderPresent(renderer);
-
-        if (quit) { sspModule.visibilityChanged(false); }
     }
+    TraxHost::log("TraxHost: Shutting down");
 
-    SDL_FreeSurface(surface);
+    module.visibilityChanged(false);
+
+
+#ifndef WIN32
+    // been told to stop, block SIGINT, to allow clean termination
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &sigset, &oldset);
+#endif
+
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-    return EXIT_SUCCESS;
+    TraxHost::log("TraxHost: Shutdown");
+    return 0;
 }
