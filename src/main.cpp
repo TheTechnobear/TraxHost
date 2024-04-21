@@ -1,12 +1,20 @@
 
 #include <SDL2/SDL.h>
 
+#include <iostream>
+
 #include "Hardware.h"
 #include "Log.h"
 #include "Module.h"
-
+#include <RtAudio.h>
 #include <signal.h>
+#include <thread>
+
 bool keepRunning = true;
+static constexpr unsigned int kAudioBufSize = 512;
+static constexpr unsigned int kAudioSampleRate = 48000;
+static constexpr unsigned int kAudioInCh = 8;
+static constexpr unsigned int kAudioOutCh = 2;
 
 bool handleEvent(SDL_Event &event, TraxHost::Module &module) {
     switch (event.type) {
@@ -110,13 +118,117 @@ bool handleHardwareEvents(TraxHost::Hardware &hw, TraxHost::Module &module) {
 
 void intHandler(int sig) {
     // only called in main thread
-    if (sig == SIGINT) {
-        keepRunning = 0;
+    if (sig == SIGINT) { keepRunning = 0; }
+}
+
+
+struct AudioData {
+    unsigned audioDeviceId = 0;
+    unsigned sampleRate = kAudioSampleRate;
+    unsigned bufSize = kAudioBufSize;
+    unsigned inCh = kAudioInCh;
+    unsigned outCh = kAudioOutCh;
+
+    RtAudio *audioApi_ = nullptr;
+    TraxHost::Module *module = nullptr;
+};
+
+
+int inout(void *outputBuffer, void *inputBuffer, unsigned int /*nBufferFrames*/, double streamTime,
+          RtAudioStreamStatus status, void *data) {
+    if (status) TraxHost::error(std::string("Stream over/underflow detected."));
+
+    AudioData *audioData = (AudioData *)data;
+    audioData->module->audioCallback((float *)inputBuffer, audioData->inCh, (float *)outputBuffer, audioData->outCh,
+                                     audioData->bufSize);
+    return 0;
+}
+
+bool startAudio(AudioData &audioData) {
+    RtAudio &audioApi = *audioData.audioApi_;
+
+    RtAudio::StreamParameters iParams, oParams;
+    iParams.nChannels = audioData.inCh;
+    iParams.firstChannel = 0;
+    oParams.nChannels = audioData.outCh;
+    oParams.firstChannel = 0;
+
+    iParams.deviceId = audioData.audioDeviceId;
+    oParams.deviceId = audioData.audioDeviceId;
+
+
+    RtAudio::StreamOptions options;
+    options.flags |= RTAUDIO_NONINTERLEAVED;
+
+    if (audioApi.openStream(&oParams, &iParams, RTAUDIO_FLOAT32, audioData.sampleRate, &audioData.bufSize, &inout,
+                            (void *)&audioData, &options)) {
+        TraxHost::error("Failed to open audio stream");
+        return false;
     }
+
+    audioData.module->prepareAudioCallback(audioData.sampleRate, audioData.bufSize);
+
+    if (!audioApi.isStreamOpen()) {
+        TraxHost::error("Failed to open audio stream");
+        return false;
+    }
+    if (audioApi.startStream()) {
+        TraxHost::error("Failed to start audio stream");
+        return false;
+    }
+    return true;
 }
 
 int main(int argc, char **argv) {
     TraxHost::log("TraxHost: Starting");
+
+#ifndef __APPLE__
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(1, &cpuset);
+    int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    if (rc != 0) {
+        TraxHost::error("TTraxHost,  Error calling pthread_setaffinity_np: " + std::to_string(rc));
+    } else {
+        TraxHost::log("TraxHost, Set affinity for main thread");
+    }
+#endif    
+
+    RtAudio audioApi;
+    // prints to stderr
+    audioApi.showWarnings(true);
+
+    std::vector<unsigned int> ids = audioApi.getDeviceIds();
+    RtAudio::DeviceInfo info;
+
+#ifdef __APPLE__
+    static constexpr const char *audioDevNamePrefix = "XMX";
+#else
+    static constexpr const char *audioDevNamePrefix = "rockchip";
+#endif
+
+    unsigned xmxAudioDeviceId = 0;
+    for (unsigned int n = 0; n < ids.size(); n++) {
+        info = audioApi.getDeviceInfo(ids[n]);
+        if (info.name.find(audioDevNamePrefix) != std::string::npos) {
+            xmxAudioDeviceId = ids[n];
+            TraxHost::log(std::string("found audio device: ") + info.name + std::string(", id: ") +
+                          std::to_string(ids[n]));
+            TraxHost::log(std::string("out: ") + std::to_string(info.outputChannels) + std::string(", in: ") +
+                          std::to_string(info.inputChannels));
+            if (info.outputChannels < 2 || info.inputChannels < 8) {
+                TraxHost::error("audio device does not have enough channels");
+                return -1;
+            }
+            break;
+        }
+    }
+
+    if (xmxAudioDeviceId == 0) {
+        TraxHost::error("audio device not found");
+        return -1;
+    }
+
 
 #ifndef WIN32
     // block sigint from other threads
@@ -166,6 +278,24 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+
+    AudioData audioData;
+    audioData.audioDeviceId = xmxAudioDeviceId;
+    audioData.audioApi_ = &audioApi;
+    audioData.module = &module;
+    for(int i=0; i<kAudioInCh; i++) {
+        module.inputEnabled(i, 1);
+    }
+    for(int i=0; i<kAudioOutCh; i++) {
+        module.outputEnabled(i, 1);
+    }
+
+    if (!startAudio(audioData)) {
+        TraxHost::error("Failed to start audio");
+        return -1;
+    }
+
+
     SDL_Renderer *renderer;
     SDL_Window *window;
     SDL_Init(0);
@@ -197,10 +327,13 @@ int main(int argc, char **argv) {
         SDL_UpdateTexture(texture, NULL, argbBuffer, winRect.w * 4);
         SDL_RenderCopy(renderer, texture, NULL, &winRect);
         SDL_RenderPresent(renderer);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000/30)); // 30fps
     }
     TraxHost::log("TraxHost: Shutting down");
 
     module.visibilityChanged(false);
+
+    if (audioApi.isStreamRunning()) audioApi.stopStream();
 
 
 #ifndef WIN32

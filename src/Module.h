@@ -13,8 +13,8 @@ public:
     AudioCallback() = default;
     virtual ~AudioCallback() = default;
     void prepareAudioCallback(int sampleRate, int numSamples);
-    void audioCallback(const float *const *inputChannelData, int numInputChannels, float *const *outputChannelData,
-                       int numOutputChannels, int numSamples);
+    void audioCallback(float *inputChannelData, int numInputChannels, float *outputChannelData, int numOutputChannels,
+                       int numSamples);
 };
 
 class Module : public AudioCallback {
@@ -48,8 +48,8 @@ public:
 
 
     void prepareAudioCallback(int sampleRate, int numSamples);
-    void audioCallback(const float *const *inputChannelData, int numInputChannels, float *const *outputChannelData,
-                       int numOutputChannels, int numSamples);
+    void audioCallback(float *inputChannelData, int numInputChannels, float *outputChannelData, int numOutputChannels,
+                       int numSamples);
     enum SSPButtons {
         SSP_Soft_1,
         SSP_Soft_2,
@@ -88,7 +88,7 @@ private:
 
     bool activeDevice_ = false;
     int sampleRate_ = 48000;
-    int bufferSize_ = 512;
+    int bufferSize_ = 0;
 
     int nChIn_ = 2;
     int nChOut_ = 8;

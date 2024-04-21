@@ -17,8 +17,6 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif ()
 
 
-include_directories(${SDL2_INCLUDE_DIRS})
-
 
 set(SOURCES
     src/main.cpp
@@ -29,4 +27,10 @@ set(SOURCES
 
 add_executable(TraxHost ${SOURCES})
 
-target_link_libraries(TraxHost ${SDL2_LIBRARIES} ${CMAKE_DL_LIBS})
+include_directories(${SDL2_INCLUDE_DIRS} external/rtaudio)
+add_subdirectory(external/rtaudio rtaudio)
+target_link_libraries(TraxHost ${SDL2_LIBRARIES} ${CMAKE_DL_LIBS} rtaudio)
+
+
+
+

@@ -5,7 +5,7 @@
 namespace TraxHost {
 
 void Module::alloc(const std::string &f, Percussa::SSP::PluginInterface *p, Percussa::SSP::PluginDescriptor *d,
-                      void *h) {
+                   void *h) {
     pluginFile_ = f;
     plugin_ = p;
     editor_ = nullptr;
@@ -54,12 +54,15 @@ void Module::allocateAudioBuffers(int ch, int numSamples) {
     bufferSize_ = numSamples;
     audioBuffer_ = new float *[audioBufferChannels_];
     for (int i = 0; i < audioBufferChannels_; i++) { audioBuffer_[i] = new float[numSamples]; }
+    for (int i = 0; i < audioBufferChannels_; i++) {
+        for (int j = 0; j < bufferSize_; j++) { audioBuffer_[i][j] = 0.0f; }
+    }
 }
 
 
 bool Module::load(std::string pluginName) {
     free();
-    static constexpr const char* pluginDir = "plugins/";
+    static constexpr const char *pluginDir = "plugins/";
     pluginName_ = pluginName;
     if (pluginName_ == "") {
         /// just cleared this module
@@ -67,10 +70,10 @@ bool Module::load(std::string pluginName) {
     }
 
 #ifdef __APPLE__
-    static constexpr  int dlopenmode = RTLD_LOCAL | RTLD_NOW;
+    static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW;
     pluginFile_ = std::string(pluginDir) + pluginName + ".vst3/Contents/MacOS/" + pluginName;
 #else
-    static constexpr  int dlopenmode = RTLD_LOCAL | RTLD_NOW | RTLD_DEEPBIND;
+    static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW | RTLD_DEEPBIND;
     pluginFile_ = pluginDir + pluginName + ".so";
 #endif
 
@@ -102,26 +105,24 @@ void Module::prepareAudioCallback(int sampleRate, int numSamples) {
     sampleRate_ = sampleRate;
     activeDevice_ = true;
 
-    if (numSamples != bufferSize_) {
-        freeAudioBuffers();
-        allocateAudioBuffers(audioBufferChannels_, numSamples);
-    }
+    if (numSamples != bufferSize_) { allocateAudioBuffers(audioBufferChannels_, numSamples); }
     if (plugin_) { plugin_->prepare(sampleRate_, bufferSize_); }
 }
 
 
-void Module::audioCallback(const float *const *inputChannelData, int numInputChannels,
-                              float *const *outputChannelData, int numOutputChannels, int numSamples) {
+void Module::audioCallback(float *inputChannelData, int numInputChannels, float *outputChannelData,
+                           int numOutputChannels, int numSamples) {
     if (activeDevice_ && plugin_) {
-        if(numSamples != bufferSize_) {
+        if (numSamples != bufferSize_ || audioBuffer_ == nullptr) {
             // should not happen!
             freeAudioBuffers();
             allocateAudioBuffers(audioBufferChannels_, numSamples);
         }
 
+
         for (int i = 0; i < nChIn_; i++) {
             for (int j = 0; j < bufferSize_; j++) {
-                audioBuffer_[i][j] = i < numInputChannels ? inputChannelData[i][j] : 0.0f;
+                audioBuffer_[i][j] = i < numInputChannels ? inputChannelData[i * bufferSize_ + j] : 0.0f;
             }
         }
 
@@ -129,14 +130,16 @@ void Module::audioCallback(const float *const *inputChannelData, int numInputCha
 
         for (int i = 0; i < numOutputChannels; i++) {
             for (int j = 0; j < bufferSize_; j++) {
-                outputChannelData[i][j] = i < nChOut_ ? audioBuffer_[i][j] : 0.0f;
+                outputChannelData[i * bufferSize_ + j] = i < nChOut_ ? audioBuffer_[i][j] : 0.0f;
             }
         }
+
+
         return;
     }
     // no valid plugin
     for (int i = 0; i < numOutputChannels; i++) {
-        for (int j = 0; j < numSamples; j++) { outputChannelData[i][j] = 0.0f; }
+        for (int j = 0; j < numSamples; j++) { outputChannelData[i * bufferSize_ + j] = 0.0f; }
     }
     return;
 }
@@ -158,4 +161,4 @@ void Module::renderToImage(unsigned char *buffer, int width, int height) {
 }
 
 
-} //namespace
+}  // namespace TraxHost
