@@ -13,7 +13,6 @@ void Module::alloc(const std::string &f, Percussa::SSP::PluginInterface *p, Perc
     dlHandle_ = h;
     requestedModule_ = f;
 
-
     nChIn_ = descriptor_->inputChannelNames.size();
     nChOut_ = descriptor_->outputChannelNames.size();
     int nCh = std::max(nChIn_, nChOut_);
@@ -158,6 +157,23 @@ void Module::visibilityChanged(bool b) {
 void Module::renderToImage(unsigned char *buffer, int width, int height) {
     if (!editor_) editor_ = plugin_->getEditor();
     if (editor_) editor_->renderToImage(buffer, width, height);
+}
+
+
+void Module::loadPreset(const std::string &pr) {
+    if (!plugin_) return;
+
+    auto file = fopen(pr.c_str(), "rb");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        auto size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        auto data = new char[size];
+        fread(data, 1, size, file);
+        fclose(file);
+        plugin_->setState(data, size);
+        delete[] data;
+    }
 }
 
 

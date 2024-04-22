@@ -5,7 +5,10 @@
 
 class TraxHardwareImpl;
 
+
+
 namespace TraxHost {
+
     class Hardware {
     public:
         Hardware();
@@ -18,3 +21,4 @@ namespace TraxHost {
         TraxHardwareImpl *impl_= nullptr;
     };
 }
+

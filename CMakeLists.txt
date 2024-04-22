@@ -19,7 +19,7 @@ endif ()
 
 
 set(SOURCES
-    src/main.cpp
+    src/TraxHost.cpp
     src/Module.cpp
     src/Log.cpp
     src/Hardware.cpp

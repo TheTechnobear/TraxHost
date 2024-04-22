@@ -50,6 +50,9 @@ public:
     void prepareAudioCallback(int sampleRate, int numSamples);
     void audioCallback(float *inputChannelData, int numInputChannels, float *outputChannelData, int numOutputChannels,
                        int numSamples);
+
+    void loadPreset(const std::string &pr);
+
     enum SSPButtons {
         SSP_Soft_1,
         SSP_Soft_2,

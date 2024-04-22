@@ -5,8 +5,8 @@
 #include <thread>
 #else
 #include <fstream>
-#include <thread>
 #include <iostream>
+#include <thread>
 #endif
 
 namespace TraxHost {
