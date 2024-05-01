@@ -30,7 +30,23 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int /*nBufferF
     if (status) TraxHost::error(std::string("Stream over/underflow detected."));
 
     AudioApi *api = (AudioApi *)data;
-    api->module->audioCallback((float *)inputBuffer, api->inCh, (float *)outputBuffer, api->outCh, api->bufSize);
+    float *inBuf = (float *)inputBuffer;
+    float *outBuf = (float *)outputBuffer;
+
+
+
+#ifdef __APPLE__
+    api->module->audioCallback(inBuf, api->inCh, outBuf, api->outCh, api->bufSize);
+#else
+    // invert buffers on xmx
+    static constexpr float inGain = -1.0f;
+    static constexpr float outGain = -5.0f/ 2.36; 
+    
+    for (int i = 0, n = api->inCh * api->bufSize; i < n; i++) inBuf[i] = inBuf[i] * inGain;
+    api->module->audioCallback(inBuf, api->inCh, outBuf, api->outCh, api->bufSize);
+    for(int i=0, n=api->outCh*api->bufSize; i<n; i++) outBuf[i] = outBuf[i] * outGain;
+#endif
+
     return 0;
 }
 
@@ -119,4 +135,4 @@ void stopAudio(AudioApi &api) {
     if (audioApi.isStreamOpen()) { audioApi.closeStream(); }
 }
 
-}
+}  // namespace TraxHost
