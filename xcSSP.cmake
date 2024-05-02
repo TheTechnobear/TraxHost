@@ -62,13 +62,14 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} 	${SSP_LINK_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} 	${SSP_LINK_FLAGS}")
 
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -mcpu=cortex-a17 -mfloat-abi=hard -mfpu=neon-vfpv4")
+set(CPU_FLAGS "-mcpu=cortex-a17 -mfloat-abi=hard -mfpu=neon-vfpv4 -O3")
+set(CMAKE_C_FLAGS "${CMAKE_CFLAGS}  ${CPU_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPU_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funwind-tables -fno-omit-frame-pointer  ")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DJUCE_CHECK_MEMORY_LEAKS=0")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${BUILDROOT}/arm-rockchip-linux-gnueabihf/include/c++/8.4.0 ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${BUILDROOT}/arm-rockchip-linux-gnueabihf/include/c++/8.4.0/arm-rockchip-linux-gnueabihf")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=cortex-a17 -mfloat-abi=hard -mfpu=neon-vfpv4")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funwind-tables -fno-omit-frame-pointer  ")
 
 set(SDL2_INCLUDE_DIRS ${CMAKE_SYSROOT}/usr/include/SDL2)
 set(SDL2_LIBRARIES ${CMAKE_SYSROOT}/usr/lib/libSDL2.so)

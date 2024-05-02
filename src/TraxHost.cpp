@@ -121,10 +121,10 @@ int main(int argc, char **argv) {
 #ifndef __APPLE__
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
+    CPU_SET(0, &cpuset);
     int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     if (rc != 0) {
-        TraxHost::error("TTraxHost,  Error calling pthread_setaffinity_np: " + std::to_string(rc));
+        TraxHost::error("TraxHost,  Error calling pthread_setaffinity_np: " + std::to_string(rc));
     } else {
         TraxHost::log("TraxHost, Set affinity for main thread");
     }
@@ -156,10 +156,18 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (module.load("trax")) {
-        TraxHost::log("Loaded trax");
+    std::string modulefile = "trax";
+    if(argc > 1) {
+        modulefile = argv[1];
+        TraxHost::log("TraxHost: Loading : " + modulefile);
     } else {
-        TraxHost::error("Loading failed trax");
+        TraxHost::log("TraxHost: Loading : trax (default)");
+    }
+
+    if (module.load(modulefile)) {
+        TraxHost::log("Loaded " +modulefile);
+    } else {
+        TraxHost::error("Loading failed for " + modulefile);
         return -1;
     }
     module.loadPreset("presets/default");

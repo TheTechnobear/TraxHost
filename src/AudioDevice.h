@@ -24,9 +24,25 @@ struct AudioApi {
     TraxHost::Module *module = nullptr;
 };
 
+static bool firstCall = true;
 
 int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int /*nBufferFrames*/, double streamTime,
                   RtAudioStreamStatus status, void *data) {
+#ifndef __APPLE__
+    if (firstCall) {
+        firstCall = false;
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(1, &cpuset);
+        int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            TraxHost::error("TraxHost AudioThread,  Error calling pthread_setaffinity_np: " + std::to_string(rc));
+        } else {
+            TraxHost::log("TraxHost , Set affinity for audio thread");
+        }
+    }
+#endif
+
     if (status) TraxHost::error(std::string("Stream over/underflow detected."));
 
     AudioApi *api = (AudioApi *)data;
@@ -34,17 +50,16 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int /*nBufferF
     float *outBuf = (float *)outputBuffer;
 
 
-
 #ifdef __APPLE__
     api->module->audioCallback(inBuf, api->inCh, outBuf, api->outCh, api->bufSize);
 #else
     // invert buffers on xmx
     static constexpr float inGain = -1.0f;
-    static constexpr float outGain = -5.0f/ 2.36; 
-    
+    static constexpr float outGain = -5.0f / 2.36;
+
     for (int i = 0, n = api->inCh * api->bufSize; i < n; i++) inBuf[i] = inBuf[i] * inGain;
     api->module->audioCallback(inBuf, api->inCh, outBuf, api->outCh, api->bufSize);
-    for(int i=0, n=api->outCh*api->bufSize; i<n; i++) outBuf[i] = outBuf[i] * outGain;
+    for (int i = 0, n = api->outCh * api->bufSize; i < n; i++) outBuf[i] = outBuf[i] * outGain;
 #endif
 
     return 0;
