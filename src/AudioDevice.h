@@ -1,7 +1,7 @@
 #pragma once
 
 
-static constexpr unsigned int kAudioBufSize = 512;
+static constexpr unsigned int kAudioBufSize = 128;
 static constexpr unsigned int kAudioSampleRate = 48000;
 static constexpr unsigned int kAudioInCh = 8;
 static constexpr unsigned int kAudioOutCh = 2;
