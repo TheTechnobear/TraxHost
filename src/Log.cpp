@@ -20,7 +20,7 @@ void log(const std::string &m) {
 void log(const std::string &m) {
     std::ofstream s("/dev/kmsg");
     s << std::this_thread::get_id() << " : " << m << std::endl;
-    std::cerr << std::this_thread::get_id() << " : " << m << std::endl;
+    // std::cerr << std::this_thread::get_id() << " : " << m << std::endl;
 }
 #endif
 

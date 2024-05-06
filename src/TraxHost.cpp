@@ -157,20 +157,28 @@ int main(int argc, char **argv) {
     }
 
     std::string modulefile = "trax";
+    std::string presetfile = modulefile + "_presets/default";
+    std::string pluginDir = "./plugins";
+
     if(argc > 1) {
         modulefile = argv[1];
-        TraxHost::log("TraxHost: Loading : " + modulefile);
-    } else {
-        TraxHost::log("TraxHost: Loading : trax (default)");
     }
+    if(argc > 2) {
+        presetfile = argv[2];
+    }
+    if(argc > 3) {
+        pluginDir = argv[3];
+    }   
 
-    if (module.load(modulefile)) {
+    TraxHost::log("TraxHost using : " + modulefile + " with preset : " + presetfile + " using plugin dir : " + pluginDir);
+
+    if (module.load(pluginDir, modulefile)) {
         TraxHost::log("Loaded " +modulefile);
     } else {
         TraxHost::error("Loading failed for " + modulefile);
         return -1;
     }
-    module.loadPreset("presets/default");
+    module.loadPreset(presetfile);
 
     if (initAudio(audioApi, module)) {
         TraxHost::log("Audio init success");

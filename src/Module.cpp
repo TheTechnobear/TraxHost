@@ -58,10 +58,8 @@ void Module::allocateAudioBuffers(int ch, int numSamples) {
     }
 }
 
-
-bool Module::load(std::string pluginName) {
+bool Module::load(const std::string& pluginDir, const std::string& pluginName) {
     free();
-    static constexpr const char *pluginDir = "plugins/";
     pluginName_ = pluginName;
     if (pluginName_ == "") {
         /// just cleared this module
@@ -70,10 +68,10 @@ bool Module::load(std::string pluginName) {
 
 #ifdef __APPLE__
     static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW;
-    pluginFile_ = std::string(pluginDir) + pluginName + ".vst3/Contents/MacOS/" + pluginName;
+    pluginFile_ = pluginDir + std::string("/")  + pluginName + ".vst3/Contents/MacOS/" + pluginName;
 #else
     static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW | RTLD_DEEPBIND;
-    pluginFile_ = pluginDir + pluginName + ".so";
+    pluginFile_ = pluginDir + std::string("/") + pluginName + ".so";
 #endif
 
     auto fHandle = dlopen(pluginFile_.c_str(), dlopenmode);

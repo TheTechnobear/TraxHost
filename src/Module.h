@@ -22,7 +22,7 @@ public:
     explicit Module() = default;
     ~Module() override { free(); }
 
-    bool load(std::string pluginName);
+    bool load(const std::string& pluginDir, const std::string& pluginName);
 
 
     void frameStart();
