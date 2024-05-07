@@ -42,7 +42,6 @@ set(CMAKE_C_COMPILER ${TOOLSROOT}/clang)
 set(CMAKE_CXX_COMPILER ${TOOLSROOT}/clang++)
 add_link_options("-fuse-ld=lld")
 
-
 set(CMAKE_C_COMPILER_TARGET ${triple})
 set(CMAKE_CXX_COMPILER_TARGET ${triple})
 
@@ -71,5 +70,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DJUCE_CHECK_MEMORY_LEAKS=0")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${BUILDROOT}/arm-rockchip-linux-gnueabihf/include/c++/8.4.0 ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${BUILDROOT}/arm-rockchip-linux-gnueabihf/include/c++/8.4.0/arm-rockchip-linux-gnueabihf")
 
-set(SDL2_INCLUDE_DIRS ${CMAKE_SYSROOT}/usr/include/SDL2)
-set(SDL2_LIBRARIES ${CMAKE_SYSROOT}/usr/lib/libSDL2.so)
+set(TARGET_SSP 1)

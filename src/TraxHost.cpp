@@ -1,111 +1,15 @@
 
-#include <SDL2/SDL.h>
 #include <signal.h>
 
 #include <iostream>
-#include <thread>
 
 #include "AudioDevice.h"
+#include "Display.h"
 #include "Hardware.h"
 #include "Log.h"
 #include "Module.h"
 
 bool keepRunning = true;
-
-bool handleEvent(SDL_Event &event, TraxHost::Module &module) {
-    switch (event.type) {
-        case SDL_QUIT: return false;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP: {
-            switch (event.key.keysym.sym) {
-                case SDLK_ESCAPE: {
-                    if (event.type == SDL_KEYUP) { return false; }
-                    break;
-                }
-                case SDLK_UP: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Up, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_DOWN: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_LEFT: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_RIGHT: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Down, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_LEFTBRACKET: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Shift_L, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_RIGHTBRACKET: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Shift_R, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_1 ... SDLK_8: {
-                    module.buttonPressed(TraxHost::Module::SSPButtons::SSP_Soft_1 + event.key.keysym.sym - SDLK_1,
-                                         event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_q: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(0, 1);
-                    break;
-                }
-                case SDLK_w: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(1, 1);
-                    break;
-                }
-                case SDLK_e: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(2, 1);
-                    break;
-                }
-                case SDLK_r: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(3, 1);
-                    break;
-                }
-                case SDLK_a: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(0, -1);
-                    break;
-                }
-                case SDLK_s: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(1, -1);
-                    break;
-                }
-                case SDLK_d: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(2, -1);
-                    break;
-                }
-                case SDLK_f: {
-                    if (event.type == SDL_KEYDOWN) module.encoderTurned(3, -1);
-                    break;
-                }
-                case SDLK_z: {
-                    module.encoderPressed(0, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_x: {
-                    module.encoderPressed(1, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_c: {
-                    module.encoderPressed(2, event.type == SDL_KEYDOWN);
-                    break;
-                }
-                case SDLK_v: {
-                    module.encoderPressed(3, event.type == SDL_KEYDOWN);
-                    break;
-                }
-            }  // switch(event.key.keysym.sym)
-            break;
-        }  // case SDL_KEYDOWN, SDL_KEYUP
-    }  // switch(event.type)
-    return true;
-}
-
 
 void intHandler(int sig) {
     // only called in main thread
@@ -118,6 +22,9 @@ int main(int argc, char **argv) {
     TraxHost::Module module;
     TraxHost::Hardware hw;
     TraxHost::AudioApi audioApi;
+
+    auto display = createDisplay(devWidth, devHeight, winWidth, winHeight);
+
 #ifndef __APPLE__
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -160,20 +67,15 @@ int main(int argc, char **argv) {
     std::string presetfile = modulefile + "_presets/default";
     std::string pluginDir = "./plugins";
 
-    if(argc > 1) {
-        modulefile = argv[1];
-    }
-    if(argc > 2) {
-        presetfile = argv[2];
-    }
-    if(argc > 3) {
-        pluginDir = argv[3];
-    }   
+    if (argc > 1) { modulefile = argv[1]; }
+    if (argc > 2) { presetfile = argv[2]; }
+    if (argc > 3) { pluginDir = argv[3]; }
 
-    TraxHost::log("TraxHost using : " + modulefile + " with preset : " + presetfile + " using plugin dir : " + pluginDir);
+    TraxHost::log("TraxHost using : " + modulefile + " with preset : " + presetfile +
+                  " using plugin dir : " + pluginDir);
 
     if (module.load(pluginDir, modulefile)) {
-        TraxHost::log("Loaded " +modulefile);
+        TraxHost::log("Loaded " + modulefile);
     } else {
         TraxHost::error("Loading failed for " + modulefile);
         return -1;
@@ -192,50 +94,23 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-
-#if __APPLE__
-    static constexpr unsigned devWidth = 320, devHeight = 240;
-#else
-    static constexpr unsigned devWidth = 320, devHeight = 320;
-#endif
-    static constexpr unsigned winWidth = devWidth, winHeight = 240;
-    static constexpr unsigned pixelSize = 4;
-    static constexpr unsigned frameRate = 30;
-    static constexpr unsigned frDelayMS = 1000 / frameRate;
-    unsigned char argbBuffer[winWidth * winHeight * pixelSize];
-
-    SDL_Renderer *renderer;
-    SDL_Window *window;
-    SDL_Init(0);
-    SDL_CreateWindowAndRenderer(devWidth, devHeight, 0, &window, &renderer);
-    SDL_ShowCursor(SDL_DISABLE);
-
-    SDL_Rect winRect = { 0, 0, winWidth, winHeight };
-    SDL_Texture *texture =
-        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, winRect.w, winRect.h);
+    if (display->init()) {
+        TraxHost::log("Display init success");
+    } else {
+        TraxHost::error("Display init failed");
+        return -1;
+    }
 
     module.visibilityChanged(true);
 
     TraxHost::log("TraxHost: Running");
     while (keepRunning) {
-#if __APPLE__
-        // SDL_PollEvent eats all IO events
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) { keepRunning = handleEvent(event, module); }
-#endif
-
+        if (!display->handleEvents(module)) { keepRunning = false; }
         hw.handleEvents(module);
 
         module.frameStart();
-        module.renderToImage(argbBuffer, winRect.w, winRect.h);
-
-        SDL_UpdateTexture(texture, NULL, argbBuffer, winRect.w * 4);
-        SDL_RenderCopy(renderer, texture, NULL, &winRect);
-        SDL_RenderPresent(renderer);
-
-        // render at given frame rate...
-        // (change later to mutex to allow for timely exit from sigint)
-        std::this_thread::sleep_for(std::chrono::milliseconds(frDelayMS));
+        module.renderToImage(display->getBuffer(), display->getWinWidth(), display->getWinHeight());
+        display->update();
     }
 
 #ifndef WIN32
@@ -249,11 +124,8 @@ int main(int argc, char **argv) {
     module.visibilityChanged(false);
 
     stopAudio(audioApi);
+    display.reset();
 
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
     TraxHost::log("TraxHost: Shutdown");
     return 0;
 }

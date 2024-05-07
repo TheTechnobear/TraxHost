@@ -23,7 +23,31 @@ set(SOURCES
     src/Module.cpp
     src/Log.cpp
     src/Hardware.cpp
+    src/Display.cpp
 )
+
+if(DEFINED ENV{USE_SDL})
+    set(USE_SDL on) 
+endif()
+
+
+if(TARGET_XMX)
+    # set(USE_SDL on)
+    if(USE_SDL)
+        set(SDL2_INCLUDE_DIRS ${CMAKE_SYSROOT}/usr/include/SDL2)
+        set(SDL2_LIBRARIES ${CMAKE_SYSROOT}/usr/lib/libSDL2.so)
+        add_definitions(-DUSE_SDL)
+    endif()
+elseif (TARGET_SSP) 
+else()
+    set(USE_SDL on)
+    if(USE_SDL)
+       add_definitions(-DUSE_SDL)
+    endif()
+endif()
+
+
+
 
 add_executable(TraxHost ${SOURCES})
 
