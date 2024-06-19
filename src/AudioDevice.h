@@ -3,8 +3,17 @@
 
 static constexpr unsigned int kAudioBufSize = 128;
 static constexpr unsigned int kAudioSampleRate = 48000;
+
+#ifdef __APPLE__
 static constexpr unsigned int kAudioInCh = 8;
 static constexpr unsigned int kAudioOutCh = 2;
+#elif defined(TARGET_SSP)
+static constexpr unsigned int kAudioInCh = 16;
+static constexpr unsigned int kAudioOutCh = 8;
+#else
+static constexpr unsigned int kAudioInCh = 8;
+static constexpr unsigned int kAudioOutCh = 2;
+#endif
 
 #include <RtAudio.h>
 
@@ -16,7 +25,8 @@ namespace TraxHost {
 
 struct AudioApi {
     RtAudio rtAudio_;
-    unsigned audioDeviceId = 0;
+    unsigned audioInDeviceId = 0;
+    unsigned audioOutDeviceId = 0;
     unsigned sampleRate = kAudioSampleRate;
     unsigned bufSize = kAudioBufSize;
     unsigned inCh = kAudioInCh;
@@ -77,33 +87,43 @@ bool initAudio(AudioApi &api, TraxHost::Module &module) {
 
 #ifdef __APPLE__
     static constexpr const char *audioDevNamePrefix = "XMX";
+#elif defined(TARGET_SSP)
+    static constexpr const char *audioDevNamePrefix = "ak4458";
 #else
     static constexpr const char *audioDevNamePrefix = "rockchip";
 #endif
 
-    unsigned xmxAudioDeviceId = 0;
+    unsigned xmxAudioInDeviceId = 0;
+    unsigned xmxAudioOutDeviceId =0;
     for (unsigned int n = 0; n < ids.size(); n++) {
         info = audioApi.getDeviceInfo(ids[n]);
         if (info.name.find(audioDevNamePrefix) != std::string::npos) {
-            xmxAudioDeviceId = ids[n];
             TraxHost::log(std::string("found audio device: ") + info.name + std::string(", id: ") +
                           std::to_string(ids[n]));
             TraxHost::log(std::string("out: ") + std::to_string(info.outputChannels) + std::string(", in: ") +
                           std::to_string(info.inputChannels));
-            if (info.outputChannels < 2 || info.inputChannels < 8) {
-                TraxHost::error("audio device does not have enough channels");
-                return -1;
-            }
-            break;
+            if (info.outputChannels >= 2) {
+                xmxAudioOutDeviceId = ids[n];
+            } 
+            if (info.inputChannels >= 8) {
+                xmxAudioInDeviceId = ids[n];
+            }   
+            if( xmxAudioInDeviceId != 0 && xmxAudioOutDeviceId != 0) break;
         }
     }
 
-    if (xmxAudioDeviceId == 0) {
-        TraxHost::error("audio device not found");
+    if (xmxAudioInDeviceId == 0) {
+        TraxHost::error("audio input device not found");
         return false;
     }
 
-    api.audioDeviceId = xmxAudioDeviceId;
+    if (xmxAudioOutDeviceId == 0) {
+        TraxHost::error("audio output device not found");
+        return false;
+    }
+
+    api.audioInDeviceId = xmxAudioInDeviceId;
+    api.audioOutDeviceId = xmxAudioOutDeviceId;
 
     for (int i = 0; i < kAudioInCh; i++) { module.inputEnabled(i, 1); }
     for (int i = 0; i < kAudioOutCh; i++) { module.outputEnabled(i, 1); }
@@ -119,8 +139,8 @@ bool startAudio(AudioApi &api) {
     oParams.nChannels = api.outCh;
     oParams.firstChannel = 0;
 
-    iParams.deviceId = api.audioDeviceId;
-    oParams.deviceId = api.audioDeviceId;
+    iParams.deviceId = api.audioInDeviceId;
+    oParams.deviceId = api.audioOutDeviceId;
 
     RtAudio::StreamOptions options;
     options.flags |= RTAUDIO_NONINTERLEAVED;
