@@ -2,10 +2,14 @@
 
 #if __APPLE__
 static constexpr unsigned devWidth = 320, devHeight = 240;
+static constexpr unsigned winWidth = devWidth, winHeight = 240;
+#elif defined(TARGET_SSP)
+static constexpr unsigned devWidth = 1600, devHeight = 480;
+static constexpr unsigned winWidth = devWidth, winHeight = 240 * 2;
 #else
 static constexpr unsigned devWidth = 320, devHeight = 320;
-#endif
 static constexpr unsigned winWidth = devWidth, winHeight = 240;
+#endif
 static constexpr unsigned pixelSize = 4;
 static constexpr unsigned frameRate = 30;
 static constexpr unsigned frDelayMS = 1000 / frameRate;

@@ -206,6 +206,10 @@ bool FBDisplay::init() {
     fb_height = var_info.yres;
     fb_bpp = var_info.bits_per_pixel;
     fb_bytes = fb_bpp / 8;
+
+    TraxHost::log("Framebuffer resolution: " + std::to_string(fb_width) + "x" + std::to_string(fb_height) + "x" +
+                  std::to_string(fb_bpp) + "bpp");
+
     fb_data_size = fb_width * fb_height * fb_bytes;
     fbdata = (char *)mmap(nullptr, fb_data_size, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
     if (fbdata == MAP_FAILED) {

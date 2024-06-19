@@ -38,6 +38,21 @@ private:
     const int encMap_[NUM_ENCODERS] = { 1, 3, 0, 2 };
     const int encSwMap_[NUM_ENCODERS] = { 1, 3, 0, 2 };
     int btnMap(int code) {
+        // TraxHost::log("button code: " + std::to_string(code));
+#ifdef TARGET_SSP
+        switch (code) {
+            case 88: return TraxHost::Module::SSPButtons::SSP_Soft_1;
+            case 87: return TraxHost::Module::SSPButtons::SSP_Soft_2;
+            case 68: return TraxHost::Module::SSPButtons::SSP_Soft_3;
+            case 67: return TraxHost::Module::SSPButtons::SSP_Soft_4;
+            case 64: return TraxHost::Module::SSPButtons::SSP_Soft_5;
+            case 63: return TraxHost::Module::SSPButtons::SSP_Soft_6;
+            case 62: return TraxHost::Module::SSPButtons::SSP_Soft_7;
+            case 61: return TraxHost::Module::SSPButtons::SSP_Soft_8;
+            case 65: return TraxHost::Module::SSPButtons::SSP_Up;
+            case 59: return TraxHost::Module::SSPButtons::SSP_Down;
+        }
+#else
         switch (code) {
             case 59: return TraxHost::Module::SSPButtons::SSP_Soft_1;
             case 60: return TraxHost::Module::SSPButtons::SSP_Soft_2;
@@ -50,6 +65,7 @@ private:
             case 68: return TraxHost::Module::SSPButtons::SSP_Up;
             case 63: return TraxHost::Module::SSPButtons::SSP_Down;
         }
+#endif
         return -1;
     }
 };
