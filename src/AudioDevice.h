@@ -27,9 +27,11 @@ static constexpr unsigned int kAudioInCh = 8;
 static constexpr unsigned int kAudioOutCh = 2;
 static constexpr int kInChMap[kAudioInCh] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 static constexpr int kOutChMap[kAudioOutCh] = { 0, 1 };
-static constexpr float inGain = -1.0f;
-static constexpr float outGain = -1.0f;
-// static constexpr float outGain = -5.0f / 2.36;
+// static constexpr float inGain = -1.0f;
+// static constexpr float outGain = -5.0f / 2.36f;
+static constexpr float inGain = -0.8f;
+static constexpr float outGain = -5.0f / 2.7f;
+
 static constexpr float inOffset = 0.f;
 static constexpr float outOffset = 0.f;
 
