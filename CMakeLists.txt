@@ -23,6 +23,7 @@ set(SOURCES
     src/Module.cpp
     src/Log.cpp
     src/Hardware.cpp
+    src/AudioDevice.cpp
     src/Display.cpp
 )
 

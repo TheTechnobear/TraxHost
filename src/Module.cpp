@@ -2,7 +2,10 @@
 
 #include <dlfcn.h>
 
+#include "AudioDevice.h"
+
 namespace TraxHost {
+
 
 void Module::alloc(const std::string &f, Percussa::SSP::PluginInterface *p, Percussa::SSP::PluginDescriptor *d,
                    void *h) {
@@ -118,16 +121,18 @@ void Module::audioCallback(float *inputChannelData, int numInputChannels, float 
 
 
         for (int i = 0; i < nChIn_; i++) {
+            int inCh =  i < numInputChannels ?  kInChMap[i] : -1 ; 
             for (int j = 0; j < bufferSize_; j++) {
-                audioBuffer_[i][j] = i < numInputChannels ? inputChannelData[i * bufferSize_ + j] : 0.0f;
+                audioBuffer_[i][j] = inCh < numInputChannels && inCh >= 0 ? inputChannelData[inCh * bufferSize_ + j] : 0.0f;
             }
         }
 
         plugin_->process(audioBuffer_, audioBufferChannels_, numSamples);
 
         for (int i = 0; i < numOutputChannels; i++) {
+            int outCh = kOutChMap[i]; 
             for (int j = 0; j < bufferSize_; j++) {
-                outputChannelData[i * bufferSize_ + j] = i < nChOut_ ? audioBuffer_[i][j] : 0.0f;
+                outputChannelData[outCh * bufferSize_ + j] = i < nChOut_ ? audioBuffer_[i][j] : 0.0f;
             }
         }
 

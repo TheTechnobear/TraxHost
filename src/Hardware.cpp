@@ -109,6 +109,12 @@ bool TraxHardwareImpl::init() {
     return true;
 }
 
+#ifdef TARGET_SSP
+static constexpr int encMult = 1;
+#else
+static constexpr int encMult = -1;
+#endif
+
 void TraxHardwareImpl::handleEvents(TraxHost::Module &m) {
     bool moreEvents = true;
     while (moreEvents) {
@@ -121,7 +127,7 @@ void TraxHardwareImpl::handleEvents(TraxHost::Module &m) {
                     //                   std::to_string(ev.code) + " " + std::to_string(ev.value);
                     // TraxHost::log("Hardware: " + msg);
                     int enc = encMap_[i];
-                    int val = ev.value * -1;
+                    int val = ev.value * encMult;
                     if (val != 0) m.encoderTurned(enc, val);
                 }
                 moreEvents = true;
