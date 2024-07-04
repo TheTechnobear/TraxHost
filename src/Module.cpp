@@ -61,7 +61,14 @@ void Module::allocateAudioBuffers(int ch, int numSamples) {
     }
 }
 
-bool Module::load(const std::string& pluginDir, const std::string& pluginName) {
+#ifdef __APPLE__
+static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW;
+#else
+static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW | RTLD_DEEPBIND;
+#endif
+
+
+bool Module::load(const std::string &pluginDir, const std::string &pluginName) {
     free();
     pluginName_ = pluginName;
     if (pluginName_ == "") {
@@ -69,13 +76,18 @@ bool Module::load(const std::string& pluginDir, const std::string& pluginName) {
         return true;
     }
 
+    if (pluginName.find("/") != std::string::npos) {
+        pluginFile_ = pluginName;
+    } else {
+        pluginFile_ = pluginDir + std::string("/") + pluginName;
+    }
+
 #ifdef __APPLE__
-    static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW;
-    pluginFile_ = pluginDir + std::string("/")  + pluginName + ".vst3/Contents/MacOS/" + pluginName;
+    pluginFile_ = pluginFile_ + ".vst3/Contents/MacOS/" + pluginName;
 #else
-    static constexpr int dlopenmode = RTLD_LOCAL | RTLD_NOW | RTLD_DEEPBIND;
-    pluginFile_ = pluginDir + std::string("/") + pluginName + ".so";
+    pluginFile_ = pluginFile_ + ".so";
 #endif
+
 
     auto fHandle = dlopen(pluginFile_.c_str(), dlopenmode);
     auto fnVersion = (Percussa::SSP::VersionFun)dlsym(fHandle, Percussa::SSP::getApiVersionName);
@@ -121,16 +133,17 @@ void Module::audioCallback(float *inputChannelData, int numInputChannels, float 
 
 
         for (int i = 0; i < nChIn_; i++) {
-            int inCh =  i < numInputChannels ?  kInChMap[i] : -1 ; 
+            int inCh = i < numInputChannels ? kInChMap[i] : -1;
             for (int j = 0; j < bufferSize_; j++) {
-                audioBuffer_[i][j] = inCh < numInputChannels && inCh >= 0 ? inputChannelData[inCh * bufferSize_ + j] : 0.0f;
+                audioBuffer_[i][j] =
+                    inCh < numInputChannels && inCh >= 0 ? inputChannelData[inCh * bufferSize_ + j] : 0.0f;
             }
         }
 
         plugin_->process(audioBuffer_, audioBufferChannels_, numSamples);
 
         for (int i = 0; i < numOutputChannels; i++) {
-            int outCh = kOutChMap[i]; 
+            int outCh = kOutChMap[i];
             for (int j = 0; j < bufferSize_; j++) {
                 outputChannelData[outCh * bufferSize_ + j] = i < nChOut_ ? audioBuffer_[i][j] : 0.0f;
             }

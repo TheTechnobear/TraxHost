@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    std::string modulefile = "trax";
+    std::string modulefile = "./trax";
     std::string presetfile = modulefile + "_presets/default";
     std::string pluginDir = "./plugins";
 
