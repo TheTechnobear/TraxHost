@@ -4,12 +4,14 @@ if(APPLE)
 endif()
 
 
-if (DEFINED ENV{BUILDROOT})
+if(DEFINED ENV{XMX_BUILDROOT})
+    set(BUILDROOT $ENV{XMX_BUILDROOT})
+elseif (DEFINED ENV{BUILDROOT})
     set(BUILDROOT $ENV{BUILDROOT})
-    set(CMAKE_SYSROOT ${BUILDROOT}/aarch64-rockchip-linux-gnu/sysroot)
 else ()
-    message("warning: BUILDROOT environment missing")
+    message("warning: BUILDROOT environment variable missing")
 endif ()
+set(CMAKE_SYSROOT ${BUILDROOT}/aarch64-rockchip-linux-gnu/sysroot)
 
 if (DEFINED ENV{TOOLSROOT})
     set(TOOLSROOT $ENV{TOOLSROOT})
