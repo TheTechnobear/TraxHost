@@ -1,0 +1,133 @@
+# installation instructions 
+
+
+**IMPORTANT READ THIS CAREFULLY, AND FOLLOW PRECISELY** 
+
+failing may mean your ssp/xmx may not boot, and may have to reinstall the factory image!
+
+
+### PART ONE - install TB plugins
+
+a) download TB Plugins zip file
+ensure you download the XMX or SSP version as appropriate (!)
+
+b) remove the sdcard from ssp/xmx 
+
+c) unzip the plugins zip file and copy ALL files to your SD card as is including sub dirctories
+
+your sd card will now contain a plugins directory with some files ending in so.
+for the xmx (only) the base directory will also contain trax.so
+
+
+d) place your sd card back into SSP/XMX and ensure that you can see my plugins within SYNTHOR.
+
+
+----------------------------------------------------------------------
+
+ok,  we now know the plugins are installed correctly and working on SSP/XMX
+
+do NOT proceed to part two until plugins are working! 
+
+----------------------------------------------------------------------
+
+
+## PART TWO - install TRAX standalone
+
+a) download TraxHost zip file 
+ensure you download the XMX or SSP version as appropriate (!)
+
+b) remove the sdcard from ssp/xmx 
+
+c) unzip the trax host zip file, and copy ALL files to your SD card (as is) 
+
+
+NEXT STEPS ARE VERY important to get name correctly 
+
+d) copy SYNTHOR to you desktop (as a backup)
+e) rename SYNTHOR (on sdcard) to SYNTHOR.ORIG
+f) rename install.sh to SYNTHOR 
+
+g) place your sd card back into SSP/XMX and turn on.
+
+
+now when you power on, it'll take a bit longer as it installs trax, then reboots back into synthor.
+(about 30-45 seconds)
+
+
+now we can that all is working ok, and we can get into Trax.
+
+turn off the power, then whilst holding down button TWO (top row, 2nd button) as you power on.
+now TRAX should appear (and will do on each power cycle, until you revert to syntho)
+
+so lets revert back to synthor 
+
+turn off the power, then whilst holding down button ONE (top row, 2nd button) as you power on.
+now TRAX should appear (and will do on each power cycle, until you revert to syntho)
+
+thats it, you all all set to go :) 
+enjoy 
+
+Mark aka TheTechnobear
+
+-----------------------------------------------------------------------------
+
+Background info - which may be helpful.
+
+-----------------------------------------------------------------------------
+
+## what's the install doing?
+
+on the factory image SYNTHOR is called when it booted up.
+so in steps above we temporarily replace with my install script.
+(which once run, renames SYNTHOR back as before) 
+
+now, behind the scenes instead of now calling SYNTHOR directly instead we call my new PercCmd process.
+
+## PercCmd
+this process decides which process to start depending on which button is being held on the device.
+(or uses the last process if none is held, lastBtn stores this)
+this way we can start different processes at startup.
+we can see in perccmd.json how these buttons are configured, so if you want you could have your own custom processes launched :) 
+
+note: for the SSP the other useful change is now the startup procedure is basically moved to the sdcard, so its easier to modify.
+(which is already the case for the XMX)
+
+## TraxHost
+so within percmd.json, we can see TraxHost is used to start trax.
+TraxHost is kind of interesting, as its just a plugin host the assigns the physical IO to the plugins IO directly.
+by default it uses the trax plugin (trax.so), but it could be used for other plugins.
+e.g. you could load CLDS directly
+
+
+## Trax plugin
+this is the final part of the puzzle, as its a plugin thats is itself a plugin host.
+thus allowing you to have different Tracks (traxs ;)) with different plugins on them.
+
+
+
+## could I uninstall this?
+theoretically it be possible, as I don't delete anything during the install process.
+basically I just rename the original start script
+so to revert, we'd simply change perccmd.sh to 
+a) mv /etc/init.d/D90synthor /etc/init.d/S90synthor , enable old startup
+b) mv /etc/init.d/S80perccmd /etc/init.d/D80perccmd , disable new startup
+
+however, its not really necessary.. as you PercCmd is just more flexible to leave in place,  and you can ignore if you dont use ;) 
+
+SO... if you want to revert, then its better you just download the factory image and reinstall.
+
+(I really give the above, just in cases devs how have a network connection to xmx/ssp want to mess with it )
+
+
+
+
+
+
+
+
+
+
+
+
+
+

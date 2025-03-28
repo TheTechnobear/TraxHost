@@ -1,5 +1,6 @@
 #!/bin/sh
 
+mv /etc/init.d/S90synthor /etc/init.d/D90synthor 
 case "$1" in
 	start)
 		printf "Starting perccmd: "

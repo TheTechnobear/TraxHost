@@ -1,0 +1,54 @@
+installation instructions 
+
+
+**IMPORTANT READ THIS CAREFULLY, AND FOLLOW PRECISELY** 
+
+failing may mean your ssp/xmx may not boot, and may have to reinstall the factory image!
+
+
+### PART ONE - install TB plugins
+
+a) download TB Plugins zip file
+ensure you download the XMX or SSP version as appropriate (!)
+
+b) remove the sdcard from ssp/xmx 
+
+c) unzip the plugins zip file and copy ALL files to your SD card as is including sub dirctories
+
+your sd card will now contain a plugins directory with some files ending in so.
+for the xmx (only) the base directory will also contain trax.so
+
+
+d) place your sd card back into SSP/XMX and ensure that you can see my plugins within SYNTHOR.
+
+
+----------------------------------------------------------------------
+
+ok,  we now know the plugins are installed correctly and working on SSP/XMX
+
+do NOT proceed to part two until plugins are working! 
+
+----------------------------------------------------------------------
+
+
+## PART TWO - install TRAX standalone
+
+a) download TraxHost zip file 
+ensure you download the XMX or SSP version as appropriate (!)
+
+b) remove the sdcard from ssp/xmx 
+
+c) unzip the trax host zip file, and copy ALL files to your SD card (as is) 
+
+
+NEXT STEPS ARE VERY important to get name correctly 
+
+d) copy SYNTHOR to you desktop (as a backup)
+e) rename SYNTHOR (on sdcard) to SYNTHOR.ORIG
+f) rename install.sh to SYNTHOR 
+
+g) place your sd card back into SSP/XMX and turn on.
+
+
+not much will happen ... it'll basically reboot :) 
+
