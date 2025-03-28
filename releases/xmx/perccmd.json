@@ -1,0 +1,13 @@
+{
+	"commands":
+	[
+		{
+			"command": "./Synthor",
+			"directory": "/media/BOOT"
+		},
+		{
+			"command": "./TraxHost",
+			"directory": "/media/BOOT"
+		}
+	]
+}
