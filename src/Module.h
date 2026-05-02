@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-#include "../../external/ssp-sdk/Percussa.h"
+#include "../external/ssp-sdk/Percussa.h"
 
 
 namespace TraxHost {
