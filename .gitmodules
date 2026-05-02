@@ -1,3 +1,6 @@
 [submodule "external/rtaudio"]
 	path = external/rtaudio
 	url = https://github.com/thestk/rtaudio.git
+[submodule "external/ssp-sdk"]
+	path = external/ssp-sdk
+	url = https://github.com/TheTechnobear/ssp-sdk
