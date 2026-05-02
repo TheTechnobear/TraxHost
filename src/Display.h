@@ -79,7 +79,10 @@ public:
     bool handleEvents(TraxHost::Module &module) override;
 
 private:
-    int fbfd = 0;
+    int fbfd = -1;
+    int ttyfd_ = -1;
+    int originalTtyMode_ = -1;
+    bool ttyModeChanged_ = false;
     struct fb_fix_screeninfo fix_info;
     struct fb_var_screeninfo var_info;
     int fb_width = 0;
@@ -87,7 +90,7 @@ private:
     int fb_bpp = 0;
     int fb_bytes = 0;
     int fb_data_size = 0;
-    char *fbdata = 0;
+    char *fbdata = nullptr;
 };
 
 

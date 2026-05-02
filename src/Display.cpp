@@ -167,14 +167,26 @@ std::shared_ptr<Display> createDisplay(unsigned xDevRes, unsigned yDevRes, unsig
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <linux/kd.h>
+#include <cstdio>
 
 FBDisplay::FBDisplay(unsigned xDevRes, unsigned yDevRes, unsigned xWinRes, unsigned yWinRes)
     : Display(xDevRes, yDevRes, xWinRes, yWinRes) {
 }
 
 FBDisplay::~FBDisplay() {
-    if (fbfd > 0) {
+    if (ttyfd_ >= 0) {
+        if (ttyModeChanged_ && originalTtyMode_ >= 0) {
+            if (ioctl(ttyfd_, KDSETMODE, originalTtyMode_) == -1) {
+                std::fprintf(stderr, "Failed to restore tty mode after framebuffer use.\n");
+            }
+        }
+        close(ttyfd_);
+    }
+    if (fbdata) {
         munmap(fbdata, fb_data_size);
+    }
+    if (fbfd >= 0) {
         close(fbfd);
         fbfd = -1;
     }
@@ -182,6 +194,16 @@ FBDisplay::~FBDisplay() {
 
 
 bool FBDisplay::init() {
+    static const char *ttyDevices[] = { "/dev/tty0", "/dev/tty", "/dev/console", nullptr };
+    for (const char **device = ttyDevices; *device != nullptr; ++device) {
+        ttyfd_ = open(*device, O_RDWR | O_CLOEXEC);
+        if (ttyfd_ < 0) continue;
+        if (ioctl(ttyfd_, KDGETMODE, &originalTtyMode_) != -1 && ioctl(ttyfd_, KDSETMODE, KD_GRAPHICS) != -1) {
+            ttyModeChanged_ = true;
+            break;
+        }
+    }
+
     fbfd = open("/dev/fb0", O_RDWR);
     if (fbfd == -1) {
         TraxHost::error("Error: cannot open framebuffer device");
