@@ -72,6 +72,8 @@ endif()
 add_executable(TraxHost ${SOURCES})
 
 include_directories(${SDL2_INCLUDE_DIRS} external/rtaudio)
+set(RTAUDIO_BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+set(RTAUDIO_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/rtaudio rtaudio)
 target_link_libraries(TraxHost ${SDL2_LIBRARIES} ${CMAKE_DL_LIBS} rtaudio)
 
